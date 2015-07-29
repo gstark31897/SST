@@ -1,28 +1,30 @@
 import socket
+import sys
 import threading
 
-class listenerThread(threading.Thread):
-  def __init__(self, server):
+class writerThread(threading.Thread):
+  def __init__(self):
     threading.Thread.__init__(self)
-    self.server = server
-    self.stoped = False
   def run(self):
+    global socket
     while 1:
-      message = self.server.recv(256)
-      if len(message) == 0:
-        break
+      message = raw_input("message:")
+      socket.send(message)
       if message == "STOP":
         break
-      print message
-  def stop(self):
-    self.stopped = True
+    socket.shutdown(1)
+
+if len(sys.argv) < 4:
+  print("Not enough arguments")
 
 socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-socket.connect(("localhost", 6667))
-socket.send("Octalus")
-listener = listenerThread(socket)
-listener.start()
+socket.connect((str(sys.argv[1]), int(sys.argv[2])))
+socket.send(str(sys.argv[3]))
+writer = writerThread()
+writer.start()
 
 while 1:
-  message = raw_input("message:")
-  socket.send(message)
+  message = socket.recv(256)
+  if len(message) == 0:
+    break
+  print(message)
