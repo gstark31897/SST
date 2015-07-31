@@ -13,11 +13,33 @@ std::map<char*, int> clients;
 void* clientListener(void *arg)
 {
   char* user = (char*)arg;
+  int sockfd = clients[user];
   printf("User %s connected with fd of %i\n", user, clients[user]);
   while(true)
   {
-    send(clients[user], user, strlen(user), MSG_NOSIGNAL);
+    char message[256];
+    int n = read(sockfd, message, 255);
+    if(n <= 0)
+    {
+      printf("User %s disconnected\n", user);
+      break;
+    }
+
+    if(n < 3)
+      continue;
+
+    printf("User %s send message %s\n", user, message);
+
+    std::string temp(message);
+    int split = temp.find(':');
+    const char* receiver = temp.substr(0, split).c_str();
+    printf(receiver);
+    const char* send  = temp.substr(split+1, temp.length()).c_str();
+    printf(send);
   }
+  clients.erase(user);
+  close(sockfd);
+  pthread_exit(NULL);
 }
 
 int main(int argc, char *argv[])

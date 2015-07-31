@@ -1,4 +1,5 @@
 #include <pthread.h>
+#include <iostream>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -11,12 +12,29 @@
 void* listener(void* arg)
 {
   int sockfd = *((int*)arg);
-  printf("SOCKFD:%i\n", &sockfd);
+  while(true)
+  {
+    char message[256];
+    int n = read(sockfd, message, 255);
+    if(n <= 0)
+    {
+      printf("Server disconnected\n");
+      break;
+    }
+    printf("Received:%s\n", message);
+  }
 }
 
 void* writer(void* arg)
 {
-
+  int sockfd = *((int*)arg);
+  printf("Starting writer thread\n");
+  while(true)
+  {
+    char message[256];
+    std::cin >> message;
+    write(sockfd, message, 256);
+  }
 }
 
 int main(int argc, char *argv[])
@@ -64,16 +82,13 @@ int main(int argc, char *argv[])
     return 1;
   }
 
-  n = read(sockfd, buffer, 256);
-  if(n < 0)
-  {
-    printf("Error reading from socket\n");
-    return 1;
-  }
-  printf("%s\n", buffer);
+  pthread_t listenerThread, writerThread;
+  pthread_create(&listenerThread, NULL, listener, (void*)&sockfd);
+  pthread_create(&writerThread, NULL, writer, &sockfd);
 
-  pthread_t listenerThread;
-  pthread_create(&listenerThread, NULL, listener, &sockfd);
+  pthread_join(listenerThread, NULL);
+  pthread_cancel(writerThread);
+  close(sockfd);
 
   return 0;
 }
