@@ -15,13 +15,15 @@ void* listener(void* arg)
   while(true)
   {
     char message[256];
-    int n = read(sockfd, message, 255);
+    int n = read(sockfd, message, 256);
     if(n <= 0)
     {
       printf("Server disconnected\n");
       break;
     }
-    printf("Received:%s\n", message);
+    if(n < 1)
+      continue;
+    printf("%s\n", message);
   }
 }
 

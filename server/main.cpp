@@ -7,37 +7,58 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
-#include <map>
-std::map<char*, int> clients;
+#include <vector>
+#include <string>
+
+std::vector<std::string> clientNames;
+std::vector<int>         clientSockets;
+
+int findClient(std::string name)
+{
+  for(int i = 0; i < clientNames.size(); ++i)
+  {
+    if(!clientNames[i].compare(name))
+      return clientSockets[i];
+  }
+  return 0;
+}
 
 void* clientListener(void *arg)
 {
-  char* user = (char*)arg;
-  int sockfd = clients[user];
-  printf("User %s connected with fd of %i\n", user, clients[user]);
+  char name[256];
+  strcpy(name, clientNames.back().c_str());
+  int sockfd = clientSockets.back();
+  printf("User %s connected with fd of %i\n", name, sockfd);
   while(true)
   {
-    char message[256];
-    int n = read(sockfd, message, 255);
+    char buffer[256];
+    int n = read(sockfd, buffer, 256);
     if(n <= 0)
     {
-      printf("User %s disconnected\n", user);
+      printf("User %s disconnected\n", name);
       break;
     }
 
     if(n < 3)
       continue;
 
-    printf("User %s send message %s\n", user, message);
-
-    std::string temp(message);
+    std::string temp(buffer);
     int split = temp.find(':');
-    const char* receiver = temp.substr(0, split).c_str();
-    printf(receiver);
-    const char* send  = temp.substr(split+1, temp.length()).c_str();
-    printf(send);
+    std::string receiver = temp.substr(0, split);
+    std::string content  = temp.substr(split+1, temp.length()+1);
+    std::string message(name);
+    message += ":" + content;
+
+    int receiverSocket = findClient(receiver);
+    if(receiverSocket > 0)
+    {
+      n = send(receiverSocket, message.c_str(), 256, NULL);
+    }
+    else
+    {
+      n = send(sockfd, "User not found\0", 256, NULL);
+    }
   }
-  clients.erase(user);
   close(sockfd);
   pthread_exit(NULL);
 }
@@ -76,13 +97,16 @@ int main(int argc, char *argv[])
 
     printf("Accepted Client");
 
-    n = read(newsockfd, buffer, 255);
+    bzero(&buffer, 256);
+    n = read(newsockfd, buffer, 256);
     if(n < 0)
       printf("Error Reading From Socket\n");
-    printf("Message: %s\n", buffer);
-    clients[buffer] = newsockfd;
+
+    std::string client(buffer);
+    clientNames.push_back(client);
+    clientSockets.push_back(newsockfd);
 
     pthread_t thread;
-    pthread_create(&thread, NULL, clientListener, (void*)buffer);
+    pthread_create(&thread, NULL, clientListener, (void*)NULL);
   }
 }
