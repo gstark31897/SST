@@ -25,6 +25,7 @@ void* listener(void* arg)
       continue;
     printf("%s\n", message);
   }
+  close(sockfd);
 }
 
 void* writer(void* arg)
