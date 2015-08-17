@@ -7,6 +7,8 @@
 #include <dirent.h>
 #include <algorithm>
 
+#include "../backend/backend.h"
+
 using namespace std;
 
 GtkWidget *window;
@@ -100,6 +102,7 @@ bool MessageInputKeyDown(GtkTextView *text_view, GdkEventKey *event, gpointer us
   if(event->keyval == GDK_KEY_Return && !shiftkey)
   {
     printf("Sending message\n");
+    SendMessage("octalus", "Hello");
     return true;
   }
 
@@ -114,7 +117,15 @@ bool MessageInputKeyUp(GtkTextView *text_view, GdkEventKey *event, gpointer user
   return false;
 }
 
-int InitGui (int argc, char *argv[])
+void UpdateBuffer(char *message)
+{
+  string data(message);
+  size_t pos = data.find(":");
+  string friendName = data.substr(0, pos);
+  printf("%s\n%s\n", friendName.c_str(), message);
+}
+
+int StartGui(int argc, char *argv[])
 {
   getdir("friends", friends);
 

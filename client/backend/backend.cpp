@@ -9,6 +9,13 @@
 #include <netinet/in.h>
 #include <netdb.h> 
 
+#include "../gui/gui.h"
+
+pthread_t listenerthread;
+pthread_t writerthread;
+
+int sockfd;
+
 void* listener(void* arg)
 {
   int sockfd = *((int*)arg);
@@ -23,36 +30,36 @@ void* listener(void* arg)
     }
     if(n < 1)
       continue;
-    printf("%s\n", message);
+    UpdateBuffer(message);
   }
   close(sockfd);
 }
 
 void* writer(void* arg)
 {
-  int sockfd = *((int*)arg);
-  printf("Starting writer thread\n");
-  while(true)
-  {
-    char message[256];
-    std::cin >> message;
-    write(sockfd, message, 256);
-  }
+  char *message = (char*)arg;
+  write(sockfd, message, strlen(message));
 }
 
-int main(int argc, char *argv[])
+void SendMessage(char *receiver, char *message)
 {
-  int sockfd, portno, n;
+  char      *fullmessage;
+  pthread_t writerThread;
+
+  fullmessage = (char*)malloc(sizeof(char) * (strlen(receiver) + strlen(message) + 2));
+  strcpy(fullmessage, receiver);
+  strcat(fullmessage, ":");
+  strcat(fullmessage, message);
+
+  pthread_create(&writerThread, NULL, writer, (void*)message);
+}
+
+int StartBackend(char *hostname, int portno, char *username)
+{
+  int n;
   struct sockaddr_in serv_addr;
   struct hostent *server;
 
-  if(argc < 4)
-  {
-    printf("Usage: <hostname> <port> <username>\n");
-    return 1;
-  }
-
-  portno = atoi(argv[2]);
   sockfd = socket(AF_INET, SOCK_STREAM, 0);
   if(sockfd < 0)
   {
@@ -60,7 +67,7 @@ int main(int argc, char *argv[])
     return 1;
   }
 
-  server = gethostbyname(argv[1]);
+  server = gethostbyname(hostname);
   if(server == NULL)
   {
     printf("Error Connecting to Host\n");
@@ -77,21 +84,21 @@ int main(int argc, char *argv[])
     return 1;
   }
 
-  char* buffer = argv[3];
-  n = write(sockfd, buffer, strlen(buffer));
+  n = write(sockfd, username, strlen(username));
   if(n < 0)
   {
     printf("Error writing to socket\n");
     return 1;
   }
 
-  pthread_t listenerThread, writerThread;
-  pthread_create(&listenerThread, NULL, listener, (void*)&sockfd);
-  pthread_create(&writerThread, NULL, writer, &sockfd);
+  pthread_create(&listenerthread, NULL, listener, (void*)&sockfd);
 
-  pthread_join(listenerThread, NULL);
-  pthread_cancel(writerThread);
+  return 0;
+}
+
+int StopBackend()
+{
+  pthread_cancel(listenerthread);
   close(sockfd);
-
   return 0;
 }
