@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <string>
 #include <string.h>
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -11,6 +12,8 @@
 
 #include "../gui/gui.h"
 
+using namespace std;
+
 pthread_t listenerthread;
 pthread_t writerthread;
 
@@ -18,11 +21,12 @@ int sockfd;
 
 void* listener(void* arg)
 {
+  printf("Running listener\n");
   int sockfd = *((int*)arg);
   while(true)
   {
-    char message[256];
-    int n = read(sockfd, message, 256);
+    char buffer[256];
+    int n = read(sockfd, buffer, 256);
     if(n <= 0)
     {
       printf("Server disconnected\n");
@@ -30,7 +34,9 @@ void* listener(void* arg)
     }
     if(n < 1)
       continue;
-    UpdateBuffer(message);
+    string message(buffer);
+    size_t index = message.find(":");
+    UpdateBuffer(message.substr(0, index), message);
   }
   close(sockfd);
 }
@@ -51,7 +57,7 @@ void SendMessage(char *receiver, char *message)
   strcat(fullmessage, ":");
   strcat(fullmessage, message);
 
-  pthread_create(&writerThread, NULL, writer, (void*)message);
+  pthread_create(&writerThread, NULL, writer, (void*)fullmessage);
 }
 
 int StartBackend(char *hostname, int portno, char *username)

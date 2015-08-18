@@ -71,7 +71,7 @@ void loadMessages(string friendName, GtkTextBuffer* messageBuffer)
   gtk_text_buffer_set_text(messageBuffer, buffer, filesize);
 }
 
-int findFriend(string friendName)
+int FindFriend(string friendName)
 {
   for(int i = 0; i < friends.size(); ++i)
   {
@@ -86,7 +86,7 @@ void user_selected(GtkListBox *box, GtkListBoxRow *row, gpointer user_data)
   if(row != NULL)
   {
      string friendName(gtk_label_get_label((GtkLabel*)gtk_bin_get_child((GtkBin*)row)));
-     int index = findFriend(friendName);
+     int index = FindFriend(friendName);
      gtk_text_view_set_buffer(GTK_TEXT_VIEW(messagehistory), messageBuffers.at(index));
   }
 }
@@ -117,12 +117,11 @@ bool MessageInputKeyUp(GtkTextView *text_view, GdkEventKey *event, gpointer user
   return false;
 }
 
-void UpdateBuffer(char *message)
+void UpdateBuffer(string friendName, string message)
 {
-  string data(message);
-  size_t pos = data.find(":");
-  string friendName = data.substr(0, pos);
-  printf("%s\n%s\n", friendName.c_str(), message);
+  int index = FindFriend(friendName);
+  message += "\n";
+  gtk_text_buffer_insert_at_cursor(messageBuffers[index], message.c_str(), message.size());
 }
 
 int StartGui(int argc, char *argv[])

@@ -47,6 +47,7 @@ void* clientListener(void *arg)
     if(n < 3)
       continue;
 
+    std::cout << buffer << '\n';
     std::string temp(buffer);
     int split = temp.find(':');
     std::string receiver = temp.substr(0, split);

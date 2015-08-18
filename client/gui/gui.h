@@ -1,2 +1,4 @@
+#include <string>
+
 int StartGui(int argc, char *argv[]);
-void UpdateBuffer(char *message);
+void UpdateBuffer(std::string friendName, std::string message);

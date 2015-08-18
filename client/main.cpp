@@ -3,7 +3,7 @@
 
 int main(int argc, char *argv[])
 {
-  StartBackend("localhost", 6667, "octalus");
+  StartBackend("localhost", 6667, "test");
   StartGui(argc, argv);
   StopBackend();
 }
